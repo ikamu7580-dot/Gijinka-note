@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>擬人化 管理ノート</title>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One&family=Caveat:wght@400;600;700&family=Zen+Kaku+Gothic+New:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gray: #6e6e72;
+  --gray-light: #c8c8cc;
+  --gray-pale: #f4f4f6;
+  --ink: #2a2028;
+  --paper: #faf8f2;
+  --line: rgba(100,80,100,0.11);
+  --dashed: rgba(100,80,100,0.18);
+  --font-hand: 'Caveat', cursive;
+  --font-body: 'Klee One', cursive;
+  --font-ui: 'Zen Kaku Gothic New', sans-serif;
+  --green: #5BB87A;
+  --green-pale: #edfaf3;
+  --yellow: #E8A030;
+  --yellow-pale: #fef7e8;
+  --blue: #4A9EDB;
+  --blue-pale: #eaf5fd;
+  /* シリーズカラー */
+  --sonic-col: #4A9EDB;
+  --mario-col: #E84040;
+  --kirby-col: #E85FA0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #e8e4dc; min-height: 100vh; padding: 2rem 1rem 4rem; font-family: var(--font-body); }
+
+/* タイトル */
+.page-title { text-align: center; margin-bottom: 1.5rem; }
+.page-title h1 { font-family: var(--font-hand); font-size: 34px; font-weight: 700; color: #3a2a38; letter-spacing: 2px; }
+.page-title p { font-family: var(--font-ui); font-size: 10px; color: var(--gray); letter-spacing: 3px; margin-top: 4px; font-weight: 300; }
+
+/* タブ */
+.tabs { display: flex; justify-content: center; gap: 0; margin-bottom: 0; max-width: 900px; margin-left: auto; margin-right: auto; }
+.tab-btn {
+  font-family: var(--font-hand); font-size: 20px; font-weight: 600;
+  padding: 0.5rem 2rem; border: 2px solid transparent;
+  border-bottom: none; border-radius: 8px 8px 0 0;
+  cursor: pointer; background: #d8d4cc; color: var(--gray);
+  transition: all 0.15s; letter-spacing: 1px;
+  position: relative; top: 2px;
+}
+.tab-btn:hover { background: #e0dcd4; }
+.tab-btn.active { background: var(--paper); color: var(--ink); border-color: #ccc8be; z-index: 2; }
+.tab-btn[data-tab="sonic"].active { color: var(--sonic-col); }
+.tab-btn[data-tab="mario"].active { color: var(--mario-col); }
+.tab-btn[data-tab="kirby"].active { color: var(--kirby-col); }
+
+/* タブコンテンツ */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ジャンプメニュー */
+.jump-menu { width: 100%; max-width: 900px; margin: 0 auto 1.5rem; display: block; padding: 0.6rem 1rem; font-family: var(--font-ui); font-size: 14px; color: var(--ink); border: 2px solid #d8d4cc; border-radius: 6px; background: var(--paper); outline: none; cursor: pointer; transition: border-color 0.15s; }
+.jump-menu:hover { border-color: #b8b4aa; }
+
+/* 凡例 */
+.legend { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 1.2rem; padding-top: 0.8rem; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-family: var(--font-ui); font-size: 11px; color: var(--gray); font-weight: 300; }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+/* 統計 */
+.stats-bar { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding: 0.9rem 1.5rem; background: var(--paper); border-radius: 6px; border: 1px dashed var(--dashed); max-width: 900px; margin-left: auto; margin-right: auto; align-items: center; }
+.stat-item { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.stat-num { font-family: var(--font-hand); font-size: 26px; font-weight: 700; line-height: 1; }
+.stat-label { font-family: var(--font-ui); font-size: 9px; letter-spacing: 1.5px; color: var(--gray); font-weight: 300; }
+
+/* ノート */
+.notebook { width: 100%; max-width: 900px; margin: 0 auto 1.8rem; background: var(--paper); border-radius: 4px; box-shadow: 0 2px 0 #ccc8be, 0 4px 0 #b8b4aa, 0 6px 0 #a8a49a, 4px 8px 28px rgba(0,0,0,0.18); position: relative; overflow: hidden; scroll-margin-top: 20px; }
+.holes { position: absolute; left: 0; top: 0; bottom: 0; width: 42px; background: #e0dbd0; border-right: 2px solid #ccc8be; z-index: 10; display: flex; flex-direction: column; align-items: center; padding-top: 48px; gap: 46px; }
+.hole { width: 15px; height: 15px; border-radius: 50%; background: #e8e4dc; border: 1.5px solid #b8b4aa; box-shadow: inset 0 1px 3px rgba(0,0,0,0.15); flex-shrink: 0; }
+.nb-content { margin-left: 42px; padding: 1.8rem 1.8rem 2.2rem 1.6rem; background-image: repeating-linear-gradient(to bottom, transparent, transparent 31px, var(--line) 31px, var(--line) 32px); background-attachment: local; }
+
+/* ワークタイトル */
+.work-title { font-family: var(--font-hand); font-size: 20px; font-weight: 700; letter-spacing: 2px; margin-bottom: 0.9rem; padding-bottom: 0.4rem; border-bottom: 1.5px dashed var(--dashed); display: flex; align-items: center; gap: 8px; }
+.work-title::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.sonic .work-title { color: #2a6a9a; }
+.sonic .work-title::before { background: var(--sonic-col); }
+.mario .work-title { color: #8a1a1a; }
+.mario .work-title::before { background: var(--mario-col); }
+.kirby .work-title { color: #8a1a5a; }
+.kirby .work-title::before { background: var(--kirby-col); }
+
+/* グループ */
+.group-block { margin-bottom: 1rem; }
+.group-header { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 0.35rem 0.6rem; border-radius: 6px; margin-bottom: 0.4rem; transition: background 0.15s; }
+.group-header:hover { background: rgba(0,0,0,0.04); }
+.group-arrow { font-size: 12px; transition: transform 0.2s; flex-shrink: 0; }
+.group-arrow.open { transform: rotate(90deg); }
+.sonic .group-arrow { color: var(--sonic-col); }
+.mario .group-arrow { color: var(--mario-col); }
+.kirby .group-arrow { color: var(--kirby-col); }
+.group-name { font-family: var(--font-hand); font-size: 16px; font-weight: 600; color: #3a2a38; letter-spacing: 1px; }
+.group-count { font-family: var(--font-ui); font-size: 10px; color: var(--gray); font-weight: 300; margin-left: auto; }
+.group-body { display: none; padding-left: 0.4rem; }
+.group-body.open { display: block; }
+
+/* カード */
+.stage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 7px; }
+.stage-card { background: var(--paper); border: 1px solid var(--dashed); border-radius: 6px; padding: 0.55rem 0.75rem; cursor: pointer; transition: box-shadow 0.15s, transform 0.1s; user-select: none; }
+.stage-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); transform: translateY(-1px); }
+.stage-card.status-none { border-color: var(--gray-light); }
+.stage-card.status-idea { border-color: var(--yellow); background: var(--yellow-pale); }
+.stage-card.status-wip  { border-color: var(--blue);   background: var(--blue-pale); }
+.stage-card.status-done { border-color: var(--green);  background: var(--green-pale); }
+.stage-card.status-ex   { border-color: var(--gray-light); background: var(--gray-pale); opacity: 0.5; }
+.stage-card.status-same { border-color: #b39ddb; background: #f3f0fd; }
+.stage-name { font-size: 12.5px; color: var(--ink); line-height: 1.5; }
+.stage-card.status-ex .stage-name { text-decoration: line-through; color: var(--gray-light); }
+.stage-status-badge { font-family: var(--font-ui); font-size: 8.5px; letter-spacing: 1px; font-weight: 700; margin-top: 2px; display: inline-block; padding: 1px 6px; border-radius: 99px; }
+.badge-none { color: var(--gray-light); border: 0.5px solid var(--gray-light); }
+.badge-idea { color: var(--yellow); border: 0.5px solid var(--yellow); }
+.badge-wip  { color: var(--blue);   border: 0.5px solid var(--blue); }
+.badge-done { color: var(--green);  border: 0.5px solid var(--green); }
+.badge-ex   { color: var(--gray-light); border: 0.5px solid var(--gray-light); }
+.badge-same { color: #7e57c2; border: 0.5px solid #b39ddb; }
+
+/* カスタム追加BOX */
+.custom-add-box { max-width: 900px; margin: 0 auto 2rem; background: var(--paper); border: 2px dashed #d8d4cc; padding: 1.2rem; border-radius: 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center; flex-direction: column; }
+.custom-add-title { width: 100%; text-align: center; font-family: var(--font-hand); font-size: 18px; font-weight: 600; color: #5a3a4a; margin-bottom: 0.5rem; }
+.custom-inputs-row { display: flex; gap: 8px; width: 100%; flex-wrap: wrap; }
+.custom-add-input { flex: 1; min-width: 140px; padding: 0.5rem 0.8rem; border: 1px solid var(--dashed); border-radius: 6px; font-family: var(--font-body); font-size: 14px; background: #fff; outline: none; }
+.custom-add-input:focus { border-color: var(--gray-light); }
+.custom-btn-row { display: flex; gap: 8px; margin-top: 5px; }
+.custom-add-btn { padding: 0.5rem 1.5rem; background: var(--gray); color: #fff; border: none; border-radius: 6px; font-family: var(--font-hand); font-weight: 700; font-size: 16px; cursor: pointer; transition: opacity 0.15s; letter-spacing: 1px; }
+.custom-add-btn:hover { opacity: 0.8; }
+.sonic .custom-add-btn { background: var(--sonic-col); }
+.mario .custom-add-btn { background: var(--mario-col); }
+.kirby .custom-add-btn { background: var(--kirby-col); }
+
+/* モーダル */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(40,30,35,0.5); z-index: 100; align-items: center; justify-content: center; padding: 1.5rem; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--paper); border-radius: 8px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.25); padding: 1.6rem 1.6rem 1.4rem; background-image: repeating-linear-gradient(to bottom, transparent, transparent 31px, var(--line) 31px, var(--line) 32px); position: relative; }
+.modal-close { position: absolute; top: 11px; right: 13px; font-family: var(--font-hand); font-size: 21px; color: var(--gray-light); cursor: pointer; background: none; border: none; line-height: 1; transition: color 0.15s; }
+.modal-close:hover { color: #E84040; }
+.modal-stage-name { font-family: var(--font-hand); font-size: 24px; font-weight: 700; margin-bottom: 0.15rem; }
+.modal-work-name { font-family: var(--font-ui); font-size: 10px; color: var(--gray); letter-spacing: 2px; font-weight: 300; margin-bottom: 0.9rem; }
+.modal-label { font-family: var(--font-ui); font-size: 10px; letter-spacing: 2px; color: var(--gray); font-weight: 300; margin-bottom: 4px; margin-top: 0.85rem; }
+.modal-status-row { display: flex; gap: 7px; flex-wrap: wrap; }
+.status-btn { font-family: var(--font-ui); font-size: 11px; padding: 3px 11px; border-radius: 99px; border: 1.5px solid var(--gray-light); color: var(--gray); background: none; cursor: pointer; transition: all 0.15s; letter-spacing: 1px; }
+.status-btn.active-none { border-color: var(--gray);   color:#fff; background:var(--gray); }
+.status-btn.active-idea { border-color: var(--yellow); color:#fff; background:var(--yellow); }
+.status-btn.active-wip  { border-color: var(--blue);   color:#fff; background:var(--blue); }
+.status-btn.active-done { border-color: var(--green);  color:#fff; background:var(--green); }
+.status-btn.active-ex   { border-color: var(--gray-light); color:#fff; background:var(--gray-light); }
+.status-btn.active-same { border-color: #7e57c2; color:#fff; background:#7e57c2; }
+.modal-textarea { width:100%; min-height:95px; border:1px solid var(--dashed); border-radius:6px; padding:0.55rem 0.75rem; font-family:var(--font-body); font-size:13px; color:var(--ink); background:rgba(255,255,255,0.6); resize:vertical; line-height:1.9; outline:none; transition:border-color 0.15s; }
+.modal-textarea:focus { border-color: var(--gray-light); }
+.modal-textarea::placeholder { color: var(--gray-light); }
+.modal-save-btn { margin-top:0.9rem; width:100%; padding:0.55rem; border-radius:6px; border:none; color:#fff; font-family:var(--font-hand); font-size:17px; font-weight:600; letter-spacing:1px; cursor:pointer; transition:opacity 0.15s; }
+.modal-save-btn:hover { opacity:0.85; }
+.series-sonic .modal-stage-name { color: var(--sonic-col); }
+.series-sonic .modal-save-btn { background: var(--sonic-col); }
+.series-mario .modal-stage-name { color: var(--mario-col); }
+.series-mario .modal-save-btn { background: var(--mario-col); }
+.series-kirby .modal-stage-name { color: var(--kirby-col); }
+.series-kirby .modal-save-btn { background: var(--kirby-col); }
+/* 性別ボタン */
+.gender-row { display:flex; gap:7px; flex-wrap:wrap; }
+.gender-btn { font-family:var(--font-ui); font-size:11px; padding:3px 13px; border-radius:99px; border:1.5px solid var(--gray-light); color:var(--gray); background:none; cursor:pointer; transition:all 0.15s; letter-spacing:1px; }
+.gender-btn.active-male   { border-color:#4A9EDB; color:#fff; background:#4A9EDB; }
+.gender-btn.active-female { border-color:#E85FA0; color:#fff; background:#E85FA0; }
+.gender-btn.active-none2  { border-color:#9C7EC8; color:#fff; background:#9C7EC8; }
+/* モーダル内2カラム */
+.modal-row2 { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; }
+.modal-input { width:100%; border:1px solid var(--dashed); border-radius:6px; padding:0.45rem 0.7rem; font-family:var(--font-body); font-size:13px; color:var(--ink); background:rgba(255,255,255,0.6); outline:none; transition:border-color 0.15s; line-height:1.6; }
+.modal-input:focus { border-color:var(--gray-light); }
+.modal-input::placeholder { color:var(--gray-light); }
+/* カードに性別アイコン表示 */
+.card-gender { font-size:10px; margin-left:4px; }
+.card-info-row { display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-top:2px; }
+/* カード削除ボタン */
+.card-delete-btn {
+  position:absolute; top:3px; right:3px;
+  width:15px; height:15px; border-radius:50%;
+  background:rgba(232,64,64,0.12); border:none;
+  color:#e84040; font-size:9px; line-height:1;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:background 0.15s;
+  font-weight:700; padding:0; z-index:2;
+}
+.card-delete-btn:hover { background:rgba(232,64,64,0.3); }
+.stage-card { position:relative; }
+/* トップへ戻るボタン */
+.back-to-top {
+  position:fixed; bottom:1.5rem; right:1.5rem;
+  width:44px; height:44px; border-radius:50%;
+  background:var(--paper); border:2px solid #b8b4aa;
+  color:#5a3a4a; font-size:20px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+  transition:all 0.15s; z-index:50;
+  opacity:0; pointer-events:none;
+}
+.back-to-top.visible { opacity:1; pointer-events:auto; }
+.back-to-top:hover { background:#f0ede4; transform:translateY(-2px); }
+/* イラストスペース */
+.illust-area { margin-top:0.85rem; }
+.illust-preview { width:100%; max-height:280px; object-fit:contain; border-radius:6px; border:1px solid var(--dashed); background:var(--gray-pale); display:block; }
+.illust-placeholder { width:100%; height:140px; border:2px dashed var(--dashed); border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; background:rgba(255,255,255,0.4); }
+.illust-placeholder-icon { font-size:28px; color:var(--gray-light); }
+.illust-placeholder-text { font-family:var(--font-ui); font-size:11px; color:var(--gray-light); letter-spacing:1px; }
+.illust-btn-row { display:flex; gap:7px; margin-top:6px; }
+.illust-btn { font-family:var(--font-ui); font-size:11px; padding:3px 12px; border-radius:99px; border:1.5px solid var(--dashed); color:var(--gray); background:none; cursor:pointer; transition:all 0.15s; }
+.illust-btn:hover { background:var(--gray-pale); }
+.illust-btn.danger { border-color:#e88; color:#c44; }
+.illust-btn.danger:hover { background:#fdeaea; }
+.illust-url-box { display:flex; gap:6px; margin-top:8px; }
+/* エクスポート・インポートバー */
+.io-bar { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:0.5rem; max-width:900px; margin-left:auto; margin-right:auto; }
+.io-btn { font-family:var(--font-hand); font-size:16px; font-weight:600; padding:0.4rem 1.4rem; border-radius:6px; border:2px solid #b8b4aa; background:var(--paper); color:#5a3a4a; cursor:pointer; transition:all 0.15s; letter-spacing:1px; }
+.io-btn:hover { background:#f0ede4; }
+.io-btn.import { border-color:var(--blue); color:var(--blue); }
+.io-btn.export { border-color:var(--green); color:var(--green); }
+.io-warning { text-align:center; font-family:var(--font-ui); font-size:11.5px; color:#c44; font-weight:600; margin-bottom:1.2rem; max-width:900px; margin-left:auto; margin-right:auto; line-height:1.5; background:rgba(204,68,68,0.1); padding:0.5rem; border-radius:6px; border:1px dashed #e88; }
+
+@media(max-width:600px){
+  .stage-grid{grid-template-columns:repeat(auto-fill,minmax(145px,1fr));}
+  .nb-content{padding:1.4rem 1.1rem 1.8rem 1.2rem;}
+  .tab-btn{font-size:16px;padding:0.4rem 1.2rem;}
+}
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>擬人化 管理ノート</h1>
+  <p>STAGE PERSONIFICATION TRACKER — SONIC / MARIO / KIRBY</p>
+</div>
+
+<button class="back-to-top" id="back-to-top">↑</button>
+
+<div class="io-bar">
+  <button class="io-btn export" id="btn-export">💾 データを書き出す</button>
+  <button class="io-btn import" id="btn-import">📂 データを読み込む</button>
+  <button class="io-btn" id="btn-help" style="border-color: var(--gray); color: var(--gray);">❓ 使い方を見る</button>
+  <input type="file" id="import-file" accept=".json" style="display:none;">
+</div>
+<div class="io-warning">
+  ⚠️ ブラウザの履歴やキャッシュを消去するとデータがすべて消えてしまいます！<br>
+  定期的に「データを書き出す」ボタンでバックアップ（保存）を行ってください。
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="sonic">ソニック</button>
+  <button class="tab-btn" data-tab="mario">マリオ</button>
+  <button class="tab-btn" data-tab="kirby">カービィ</button>
+</div>
+
+<div class="tab-content active" id="tab-sonic">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gray-light)"></div>未着手</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>アイデアあり</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>制作中</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>完成</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b39ddb"></div>同一人物</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gray-pale)"></div>除外</div>
+    <div class="legend-item" style="font-family:var(--font-ui);font-size:11px;color:var(--gray);">※ カードクリックで編集</div>
+  </div>
+  <div class="stats-bar">
+    <div class="stat-item"><span class="stat-num" id="s-total" style="color:#2a6a9a">0</span><span class="stat-label">TOTAL</span></div>
+    <div class="stat-item"><span class="stat-num" id="s-done"  style="color:var(--green)">0</span><span class="stat-label">DONE</span></div>
+    <div class="stat-item"><span class="stat-num" id="s-wip"   style="color:var(--blue)">0</span><span class="stat-label">WIP</span></div>
+    <div class="stat-item"><span class="stat-num" id="s-idea"  style="color:var(--yellow)">0</span><span class="stat-label">IDEA</span></div>
+    <div class="stat-item"><span class="stat-num" id="s-ex"    style="color:var(--gray-light)">0</span><span class="stat-label">除外</span></div>
+  </div>
+  <div id="sonic-notebooks"></div>
+</div>
+
+<div class="tab-content" id="tab-mario">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gray-light)"></div>未着手</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>アイデアあり</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>制作中</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>完成</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b39ddb"></div>同一人物</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gray-pale)"></div>除外</div>
+    <div class="legend-item" style="font-family:var(--font-ui);font-size:11px;color:var(--gray);">※ カードクリックで編集</div>
+  </div>
+  <div class="stats-bar">
+    <div class="stat-item"><span class="stat-num" id="m-total" style="color:#8a1a1a">0</span><span class="stat-label">TOTAL</span></div>
+    <div class="stat-item"><span class="stat-num" id="m-done"  style="color:var(--green)">0</span><span class="stat-label">DONE</span></div>
+    <div class="stat-item"><span class="stat-num" id="m-wip"   style="color:var(--blue)">0</span><span class="stat-label">WIP</span></div>
+    <div class="stat-item"><span class="stat-num" id="m-idea"  style="color:var(--yellow)">0</span><span class="stat-label">IDEA</span></div>
+    <div class="stat-item"><span class="stat-num" id="m-ex"    style="color:var(--gray-light)">0</span><span class="stat-label">除外</span></div>
+  </div>
+  <div id="mario-notebooks"></div>
+</div>
+
+<div class="tab-content" id="tab-kirby">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gray-light)"></div>未着手</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>アイデアあり</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>制作中</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>完成</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b39ddb"></div>同一人物</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gray-pale)"></div>除外</div>
+    <div class="legend-item" style="font-family:var(--font-ui);font-size:11px;color:var(--gray);">※ カードクリックで編集</div>
+  </div>
+  <div class="stats-bar">
+    <div class="stat-item"><span class="stat-num" id="k-total" style="color:#8a1a5a">0</span><span class="stat-label">TOTAL</span></div>
+    <div class="stat-item"><span class="stat-num" id="k-done"  style="color:var(--green)">0</span><span class="stat-label">DONE</span></div>
+    <div class="stat-item"><span class="stat-num" id="k-wip"   style="color:var(--blue)">0</span><span class="stat-label">WIP</span></div>
+    <div class="stat-item"><span class="stat-num" id="k-idea"  style="color:var(--yellow)">0</span><span class="stat-label">IDEA</span></div>
+    <div class="stat-item"><span class="stat-num" id="k-ex"    style="color:var(--gray-light)">0</span><span class="stat-label">除外</span></div>
+  </div>
+  <div id="kirby-notebooks"></div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-inner">
+    <button class="modal-close" id="modal-close">✕</button>
+    <p class="modal-stage-name" id="modal-stage-name"></p>
+    <p class="modal-work-name" id="modal-work-name"></p>
+
+    <div class="modal-label">イラスト (URL指定)</div>
+    <div class="illust-area" id="illust-area">
+      <div class="illust-placeholder" id="illust-placeholder">
+        <span class="illust-placeholder-icon">🖼</span>
+        <span class="illust-placeholder-text">下の入力欄に画像URLを入れると表示されます</span>
+      </div>
+      <img class="illust-preview" id="illust-preview" src="" style="display:none;">
+      <div class="illust-btn-row" id="illust-btn-row" style="display:none;">
+        <button class="illust-btn danger" id="illust-delete">画像を外す</button>
+      </div>
+    </div>
+    <div class="illust-url-box">
+      <input type="text" id="illust-url-input" class="modal-input" placeholder="画像URL（例: https://...）をペースト">
+      <button id="illust-url-apply" class="io-btn" style="padding: 0.45rem 1rem; font-size:12px;">適用</button>
+    </div>
+
+    <div class="modal-label">ステータス</div>
+    <div class="modal-status-row">
+      <button class="status-btn" data-s="none">未着手</button>
+      <button class="status-btn" data-s="idea">アイデアあり</button>
+      <button class="status-btn" data-s="wip">制作中</button>
+      <button class="status-btn" data-s="done">完成</button>
+      <button class="status-btn" data-s="same">同一人物</button>
+      <button class="status-btn" data-s="ex">除外</button>
+    </div>
+
+    <div class="modal-label">性別</div>
+    <div class="gender-row">
+      <button class="gender-btn" data-g="female">女性</button>
+      <button class="gender-btn" data-g="male">男性</button>
+      <button class="gender-btn" data-g="none2">無性別</button>
+      <button class="gender-btn" data-g="unset">未設定</button>
+    </div>
+
+    <div class="modal-row2">
+      <div>
+        <div class="modal-label">年齢</div>
+        <input class="modal-input" id="modal-age" type="text" placeholder="例：17歳">
+      </div>
+      <div>
+        <div class="modal-label">見た目（概要）</div>
+        <input class="modal-input" id="modal-look" type="text" placeholder="例：青×ピンクのツインテール">
+      </div>
+    </div>
+
+    <div class="modal-label">見た目（詳細）</div>
+    <textarea class="modal-textarea" id="modal-look-detail" placeholder="服装、アクセサリー、カラーパレットなど……" style="min-height:70px;"></textarea>
+
+    <div class="modal-label">性格</div>
+    <textarea class="modal-textarea" id="modal-personality" placeholder="性格の傾向、雰囲気など……" style="min-height:65px;"></textarea>
+
+    <div class="modal-label">特徴</div>
+    <textarea class="modal-textarea" id="modal-trait" placeholder="特技、癖、設定上の特徴など……" style="min-height:55px;"></textarea>
+
+    <div class="modal-label">口調・セリフ例</div>
+    <textarea class="modal-textarea" id="modal-quote" placeholder="「セリフ例」など……" style="min-height:65px;"></textarea>
+
+    <div class="modal-label">没案</div>
+    <textarea class="modal-textarea" id="modal-botsu" placeholder="採用しなかった案、方向性の違うバージョンなど……" style="min-height:55px;"></textarea>
+
+    <div class="modal-label">CV候補メモ</div>
+    <textarea class="modal-textarea" id="modal-cv" placeholder="CV候補、声のイメージなど……" style="min-height:50px;"></textarea>
+
+    <div class="modal-label">その他メモ</div>
+    <textarea class="modal-textarea" id="modal-memo" placeholder="自由記述……" style="min-height:50px;"></textarea>
+
+    <button class="modal-save-btn" id="modal-save">保存する</button>
+  </div>
+</div>
+
+<script>
+// ===== データ定義 =====
+const SONIC_WORKS = [
+  {title:"ソニック（初代）",sections:[{group:null,stages:["グリーン ヒル","マーブル","スプリング ヤード","ラビリンス","スター ライト","スクラップ ブレイン","ファイナル"]}]},
+  {title:"ソニック2",sections:[{group:null,stages:["エメラルド ヒル","ケミカル プラント","アクアティック ルーイン","カジノ ナイト","ヒル トップ","ミスティック ケイブ","オイル オーシャン","メトロポリス","スカイ チェイス","ウィング フォートレス","デス エッグ","ヒドゥン パレス"]}]},
+  {title:"ソニックCD",sections:[{group:null,stages:["パームツリー パニック","コリジョン カオス","タイダル テンペスト","クォーツ クワドラント","ワッキー ワークベンチ","スターダスト スピードウェイ","メタリック マッドネス"]}]},
+  {title:"ソニック3",sections:[{group:null,stages:["エンジェル アイランド","ハイドロシティ","マーブル ガーデン","カーニバル ナイト","アイスキャップ","ランチ ベース"]}]},
+  {title:"S&K",sections:[{group:null,stages:["マッシュルーム ヒル","フライング バッテリー","サンドポリス","ラバー リーフ","ヒドゥン パレス","スカイ サンクチュアリ","デス エッグ","ザ ドゥームスデイ"]}]},
+  {title:"ソニック4 Ep1",sections:[{group:null,stages:["スプラッシュ ヒル","カジノ ストリート","ロスト ラビリンス","マッド ギア","エッグ ステーション"]}]},
+  {title:"ソニック4 Ep2",sections:[{group:null,stages:["シルバニア キャッスル","ホワイト パーク","オイル デザート","スカイ フォートレス","デス エッグ マーク2"]}]},
+  {title:"ソニックマニア",sections:[{group:null,stages:["グリーン ヒル","ケミカル プラント","スタジオ ポリス","フライング バッテリー","プレス ガーデン","スターダスト スピードウェイ","ハイドロ シティ","ミラージュ サルーン","オイル オーシャン","ラバー リーフ","メタリック マッドネス","タイタニック モナーク"]}]},
+  {title:"ソニックスーパースターズ",sections:[{group:null,stages:["ブリッジ アイランド","スピード ジャングル","スカイ テンプル","ピンボール カーニバル","ラグーン シティ","サンド サンクチュアリ","プレス ファクトリー","ゴールデン キャピタル","サイバー ステーション","フローズン ベース","エッグ フォートレス"]}]},
+  {title:"S&T",sections:[{group:null,stages:["ターコイズ ヒル","ギガロ ポリス","スリーピング エッグ","メカ グリーン ヒル","アクア プラネット","エレクトリック エッグ"]}]},
+  {title:"S&T2",sections:[{group:null,stages:["グレート ターコイズ","サンセット パーク","メタ ジャングリラ","ロボトニック ウィンター","タイダル プラント","アトミック デストロイヤー"]}]},
+  {title:"ソニックアドベンチャー",sections:[{group:null,stages:["ステーション スクエア","ミスティック ルーイン","エッグ キャリア","エメラルド コースト","ウィンディー バレー","カジノポリス","アイスキャップ","トゥインクル パーク","スピード ハイウェイ","レッド マウンテン","スカイ デッキ","ホット シェルター","ロスト ワールド","ファイナル エッグ","スカイ チェイス","サンド ヒル"]}]},
+  {title:"SA2",sections:[{group:null,stages:["シティ エスケープ","ワイルド キャニオン","プリズン レーン","メタル ハーバー","グリーン フォレスト","パンプキン ヒル","ミッション ストリート","アクアティック マイン","ルート 101","ヒドゥン ベース","ピラミッド ケイブ","デス チェンバー","エターナル エンジン","メテオ ハード","クレイジー ガジェット","ファイナル ラッシュ","アイアン ゲート","ドライ ラグーン","サンド オーシャン","ラジカル ハイウェイ","エッグ クォーター","ロスト コロニー","ウェポンズ ベッド","セキュリティ ホール","ホワイト ジャングル","ルート 280","スカイ レール","マッド スペース","コズミック ウォール","ファイナル チェイス","キャノンズ コア","グリーン ヒル"]}]},
+  {title:"ソニックヒーローズ",sections:[{group:null,stages:["シー ゲート","シーサイド ヒル","オーシャン パレス","グランド メトロポリス","パワー プラント","カジノ パーク","ビンゴ ハイウェイ","レール キャニオン","バレット ステーション","フロッグ フォレスト","ロスト ジャングル","ハング キャッスル","ミスティック マンション","エッグ フリート","ファイナル フォートレス"]}]},
+  {title:"新ソニ（2006）",sections:[{group:null,stages:["ウェーブ オーシャン","ダスティ デザート","ホワイト アクロポリス","クライシス シティ","フレイム コア","ラジカル トレイン","トロピカル ジャングル","キングダム バレー","アクアティック ベース","エンド オブ ザ ワールド"]}]},
+  {title:"ワールドアドベンチャー",sections:[{group:null,stages:["ホワイト アイランド","クレイ キャッスル","オレンジ ルーフス","クール エッジ","ドラゴン ロード","ホット デザート","スカイスクレイパー スキャンパー","ジャングル ジョイライド","クリムゾン カーニバル"]}]},
+  {title:"カラーズ",sections:[{group:null,stages:["トロピカル リゾート","スウィート マウンテン","スターライト カーニバル","プラネット ウィスプ","アクアリウム パーク","アステロイド コースター","ターミナル ベロシティ","ゲーム ランド"]}]},
+  {title:"ジェネレーションズ（白の時空）",sections:[{group:null,stages:["グリーン ヒル","ケミカル プラント","スカイ サンクチュアリ","スピード ハイウェイ","シティ エスケープ","シーサイド ヒル","クライシス シティ","オレンジ ルーフス","プラネット ウィスプ"]}]},
+  {title:"ジェネレーションズ（青の冒険）",sections:[{group:null,stages:["グリーン ヒル","カジノ ナイト","マッシュルーム ヒル","エメラルド コースト","ラジカル ハイウェイ","ウォーター パレス","トロピカル リゾート"]}]},
+  {title:"ロストワールド",sections:[{group:null,stages:["ウィンディ ヒル","デザート ルーインズ","トロピカル コースト","フローズン ファクトリー","サイレント フォレスト","スカイ ロード","ラバー マウンテン","ヒドゥン ワールド"]}]},
+  {title:"フォース",sections:[
+    {group:"グリーン ヒル組",stages:["ロスト バレー","アーセナル ピラミッド","グリーン ヒル","仮想現実"]},
+    {group:"ケミカル プラント組",stages:["スペースポート","ケミカル プラント","ネットワーク ターミナル"]},
+    {group:"デスエッグ組",stages:["プリズン ホール","エッグ ゲート","デスエッグ"]},
+    {group:"市街地組",stages:["ゴースト タウン","パーク アベニュー","サンセット ハイツ","レッドゲート ブリッジ","敵勢力圏"]},
+    {group:"ミスティック ジャングル組",stages:["ルミナス フォレスト","カジノ フォレスト","アクア ロード","軍関連施設"]},
+    {group:"メトロポリス組",stages:["キャピタル シティ","メトロポリタン ハイウェイ","ヌル スペース"]},
+    {group:"エッグマン帝国要塞組",stages:["インペリアル タワー","モーター キャニオン","アイアン フォートレス","ラスト ジャッジメント"]}
+  ]},
+  {title:"フロンティア",sections:[{group:null,stages:["クロノス島","アレス島","カオス島","レイア島","ウラノス島","グリーン ヒル（電脳）","ケミカル プラント（電脳）","スカイ サンクチュアリ（電脳）","エターナル ハイウェイ"]}]},
+  {title:"シャドウ・ザ・ヘッジホッグ",sections:[{group:null,stages:["ウエストポリス","デジタル サーキット","グリフィック キャニオン","リーサル ハイウェイ","クリプティック キャッスル","プリズン アイランド","サーカス パーク","セントラル シティ","ザ・ドゥーム","スカイ トループス","マッド マトリックス","デス ルーイン","ジ・アーク","エアー フリート","アイアン ジャングル","スペース ガジェット","ロスト インパクト","GUN フォートレス","ブラック コメット","ラバー シェルター","コズミック フォール","ファイナル ホーント","ザ・ラストウェイ"]}]},
+  {title:"シャドウ ジェネレーションズ",sections:[{group:null,stages:["ホワイトスペース","スペースコロニー・アーク","レール キャニオン","キングダム バレー","サンセット ハイツ","カオス島","ラジカル ハイウェイ","トウキョウ"]}]},
+  {title:"アドバンス",sections:[{group:null,stages:["ネオ グリーン ヒル","シークレット ベース","カジノ パラダイス","アイス マウンテン","エンジェル アイランド","エッグ ロケット","コズミック エンジェル","エックス（X）","ザ・ムーン"]}]},
+  {title:"アドバンス2",sections:[{group:null,stages:["リーフ フォレスト","ホット クレーター","ミュージック プラント","アイス パラダイス","スカイ キャニオン","テクノ ベース","エッグ ユートピア","ダブルエックス（XX）","トゥルーエリア53"]}]},
+  {title:"アドバンス3",sections:[{group:null,stages:["ルート99","サンセット ヒル","オーシャン ベース","トイ キングダム","トゥインクル スノー","サイバー トラック","カオス エンジェル","アルター エメラルド","ノンアグレッション"]}]},
+  {title:"ラッシュ",sections:[{group:null,stages:["リーフ ストーム","ウォーター パレス","ミラージュ ロード","ナイト カーニナル","ヒュージ クライシス","アルティチュード リミット","デッド ライン","アンノウン","イクセプション"]}]},
+  {title:"ラッシュアドベンチャー",sections:[{group:null,stages:["プラント キングダム","マシン ラビリンス","コーラル ケイヴ","ホーンテッド シップ","ブリザード ピークス","スカイ バビロン","パイレーツ アイランド","ビッグ スウェル","ディープ コア","ヒドゥン アイランド"]}]},
+  {title:"秘密のリング",sections:[{group:null,stages:["ロスト プロローグ","サンド オアシス","ダイナソー ジャングル","イビル ファウンドリー","レビテイテッド ルーイン","パイレーツ ストーム","スケルトン ドーム","ナイト パレス"]}]},
+  {title:"暗黒の騎士",sections:[{group:null,stages:["ミスティ レイク","キャメロット キャッスル","ディープ ウッズ","タイタニック プレーン","クリスタル ケイブ","モルテン マイン","ファラウェイ アヴァロン","ナイツ パッセージ","シュラウディッド フォレスト","グレート メガリス","ザ コルドロン","ドラゴンズ レア","ダーク ホロウ"]}]},
+];
+
+const MARIO_WORKS = [
+  {title:"マリオサンシャイン",sections:[{group:"ドルピック島",stages:["エアポート","ドルピックタウン","ビアンコヒルズ","リコハーバー","マンマビーチ","ピンナパーク","シレナビーチ","マーレのいりえ","モンテのむら","コロナマウンテン"]}]},
+  {title:"マリオギャラクシー",sections:[
+    {group:null,stages:["ほうき星の天文台","ヘブンズドアギャラクシー","スイーツファクトリーギャラクシー","コクーンアステロイドギャラクシー","ティアドロップギャラクシー","フィッシュトンネルギャラクシー","サンドリバーギャラクシー","デスプロムナードギャラクシー","スノーカプセルギャラクシー","チャレンジサーフィンギャラクシー","チャレンジボールギャラクシー","チャレンジバブルギャラクシー","クッパギャラクシープラント","グランドフィナーレギャラクシー"]},
+    {group:"テラス組",stages:["エッグプラネットギャラクシー","ハニービーキングダムギャラクシー","トライアルサーフィンギャラクシー","フリップパネルギャラクシー","クッパJr.ロボプラント"]},
+    {group:"バスルーム組",stages:["スターダストギャラクシー","バトルロックギャラクシー","トライアルボールギャラクシー","バンバンバニッシュギャラクシー","クッパスタープラント"]},
+    {group:"キッチン組",stages:["グラスビーチギャラクシー","ファントムギャラクシー","トライアルバブルギャラクシー","フローターランドギャラクシー","クッパJr.シッププラント"]},
+    {group:"ベッドルーム組",stages:["ウインドガーデンギャラクシー","アイスボルケーノギャラクシー","サンドアイランドギャラクシー","ハニークライムギャラクシー","クッパダークマタープラント"]},
+    {group:"マシンルーム組",stages:["オータムウッズギャラクシー","ループオーシャンギャラクシー","トイボックスギャラクシー","スカルシャークギャラクシー","クッパJr.クリーチャープラント"]},
+    {group:"ロフト組",stages:["ダンジョンケイブギャラクシー","キャノンフリートギャラクシー","ヘルプロミネンスギャラクシー","ミステリーサークルギャラクシー"]}
+  ]},
+  {title:"マリオギャラクシー2",sections:[
+    {group:"World 1",stages:["空島ギャラクシー","ヨースターギャラクシー","ほりほり鉱山ギャラクシー","もくもくけいこくギャラクシー","レッドブルーパネルギャラクシー","あべこべ引力ギャラクシー","クッパJr.の空飛ぶ砦"]},
+    {group:"World 2",stages:["かくざいもくざいギャラクシー","はるかなる大滝ギャラクシー","ゴロ岩ゴロゴロギャラクシー","星の入り江ギャラクシー","ジャングルグライダーギャラクシー","フラワーヘブンギャラクシー","クッパの溶岩帝国"]},
+    {group:"World 3",stages:["ビッグツリーギャラクシー","クラウドガーデンギャラクシー","ゴーストゴンベアギャラクシー","ホワイトスノーギャラクシー","タマコロプラネットギャラクシー","チカチカブロックギャラクシー","クッパJr.の戦艦の港"]},
+    {group:"World 4",stages:["でっかでっかギャラクシー","オモテウランドギャラクシー","スカイビーチギャラクシー","ワンワンファクトリーギャラクシー","スイーツミステリーギャラクシー","ハニービレッジギャラクシー","クッパの重力帝国"]},
+    {group:"World 5",stages:["イナズマの雲海ギャラクシー","流れる星砂ギャラクシー","かちこち溶岩ギャラクシー","オバケの迷宮ギャラクシー","はちゃめちゃ引力ギャラクシー","チャレンジグライダーギャラクシー","クッパJr.の大砲の城"]},
+    {group:"World 6",stages:["マグマモンスターギャラクシー","古代の遺跡ギャラクシー","なつかしの砦ギャラクシー","バトルアステロイドギャラクシー","フラッシュブラックギャラクシー","地の底の洞窟ギャラクシー","クッパの新銀河帝国"]},
+    {group:"World S",stages:["マリオオンマリオギャラクシー","タマコロスライダーギャラクシー","ひみつのアスレチックギャラクシー","マッドストーンギャラクシー","キングオブキングスギャラクシー","レッドブルーブロックギャラクシー","チャンピオンシップギャラクシー"]}
+  ]},
+  {title:"マリオ64",sections:[{group:null,stages:["ボムへいのせんじょう","バッタンキングのとりで","かいぞくのいりえ","さむいさむいマウンテン","テレサのホラーハウス","やみにとけるどうくつ","ファイアバブルランド","あっちっちさばく","ウォーターランド","スノーマンズランド","みずびたシティー","たかいたかいマウンテン","ちびでかアイランド","チックタックロック","レインボークルーズ"]}]},
+  {title:"マリオオデッセイ",sections:[{group:null,stages:["帽子の国 カブロン","滝の国 ダイナフォー","砂の国 アッチーニャ","湖の国 ドレッシーバレー","森の国 スチームガーデン","雲の国 グランドモック","失われた国 ロス島","都市の国 ニュードンクシティ","雪の国 パウダーボウル","海の国 シュワシュワーナ","料理の国 ボルボーノ","奪われし国 ホロビア","クッパの国 クッパ城","月の国 ハニークレーター","キノコ王国 ピーチ城","月の国 裏 ラビットクレーター","月の国 もっと裏 ラストクレーター"]}]},
+];
+
+const KIRBY_WORKS = [
+  {title:"星のカービィ（初代）",sections:[{group:"プププランド",stages:["プププランド","グリーングリーンズ","キャッスルロロロ","フロートアイランズ","バブリークラウズ","マウントデデデ"]}]},
+  {title:"夢の泉の物語",sections:[{group:null,stages:["ベジタブルバレー","アイスクリームアイランド","バタービルディング","グレープガーデン","ヨーグルトヤード","オレンジオーシャン","レインボーリゾート","ザ ファウンテン オブ ドリーム"]}]},
+  {title:"星のカービィ2",sections:[{group:null,stages:["グラスランド","ビッグフォレスト","リップルフィールド","アイスバーグ","レッドキャニオン","クラウディパーク","ダークキャッスル"]}]},
+  {title:"SDX / USDX",sections:[
+    {group:null,stages:["グリーングリーンズ","キャッスルロロロ","フロートアイランズ","バブリークラウズ","マウントデデデ"]},
+    {group:"ダイナブレイド組",stages:["ピーナッツ平野","マシュマロ城","ココア洞窟","キャンディ山","ダイナブレイドの巣"]},
+    {group:"グルメット組",stages:["かぼちゃグランド","もろこしホール","たまねぎガーデン"]},
+    {group:"マジルテ組",stages:["ちていの木々","水しょうの畑","古代のとう","しんぴの楽園"]},
+    {group:"戦艦ハルバード",stages:["戦艦ハルバード"]},
+    {group:"ミルキーロード組",stages:["ポップスター","草花の星 フロリア","水の星 アクアリス","大空の星スカイハイ","灼熱の星ホットビート","洞穴の星ケビオス","機械の星メックアイ","常夜の星ハーフムーン","？？？","ギャラクティック・ノヴァ"]}
+  ]},
+  {title:"星のカービィ3",sections:[{group:null,stages:["グラスランド","リップルフィールド","サンドキャニオン","クラウディパーク","アイスバーグ","ハイパーゾーン"]}]},
+  {title:"星のカービィ64",sections:[{group:null,stages:["ポップスター","ホロビタスター","ウルルンスター","コレカラスター","ブルブルスター","リップルスター","ファイナルスター"]}]},
+  {title:"カービィのエアライド",sections:[
+    {group:null,stages:["プランテス","ヴァレリオン","サンドーラ","コルダ","マグヒート","アイルーン","スチールオーガン","チェックナイト","ギャラックス"]},
+    {group:"ウエライド組",stages:["草","砂","空","炎","光","水","鉄"]}
+  ]},
+  {title:"鏡の大迷宮",sections:[{group:null,stages:["レインボールート","ムーンライトマンション","キャベッジキャバーン","マスタードマウンテン","キャロットキャッスル","オリーブオーシャン","ペパーミントパレス","ラディッシュルインズ","キャンディコンストレイション","ディメンションミラー"]}]},
+  {title:"タッチカービィ",sections:[
+    {group:"レッディランド組",stages:["プレーンプラント","タイニータウン","ラビンロード"]},
+    {group:"アロンジバレー組",stages:["ゴーストグラウンド","グロースグラス","マグマウント"]},
+    {group:"イエラスアドベンチャー組",stages:["リフトルイン","コントラストケーブ","シルバーサブマリン"]},
+    {group:"ネオジェネオ組",stages:["マシンマンション","ドリーミーダークネス","パレットポリス"]},
+    {group:"ブエルヒルズ組",stages:["コールドコース","ダンジョンドーム","キャンバスキャニオン"]},
+    {group:"オルトラムエリア組",stages:["コラプスキャッスル","ヴァラトルボルケーノ","サイレントシーベッド"]},
+    {group:"ワンダーバイレット組",stages:["フローズンファンタジー","マッドメカニズム","スペクタクルスペース"]},
+    {group:"ザ ワールド オブ ドロシア",stages:["ザ ワールド オブ ドロシア"]}
+  ]},
+  {title:"参上！ドロッチェ団",sections:[
+    {group:null,stages:["プリズムプレインズ","ネイチャーネイベル","クリーミークラウド","ジャムジャングル","ボイスボルカノ","アイランドアイス"]},
+    {group:null,stages:["シークレットシー","ギャンブルギャラクシー"]}
+  ]},
+  {title:"毛糸のカービィ",sections:[
+    {group:"キルトのまち組",stages:["フラッフのおしろ"]},
+    {group:"グラスランド組",stages:["ふんすいのにわ","おはなばたけ","にじのたき","おおきなまめのき","びっくりやさい","ペラペラのもり"]},
+    {group:"ホットランド組",stages:["さんかくさばく","あっちっちやま","ヒンヤリどうくつ","きょうりゅうジャングル","ほのおのピラミッド","よるのさばく"]},
+    {group:"ファンタジーランド組",stages:["おもちゃのカーニバル","キノコのこかげ","スイーツパーク","メロディタウン","カカオえき","まっくらやしき"]},
+    {group:"ウォーターランド組",stages:["ザブンビーチ","ブクブクのうみ","ひみつのしま","モグールかいてい","ドッカンせんだん","でんせつのうみ"]},
+    {group:"スノーランド組",stages:["タマゲールせつげん","ポカポカハウス","スライダーマウンテン","ゆきのかんらんしゃ","ヨーヒエールのうみ","グレートジャンボツリー"]},
+    {group:"スペースランド組",stages:["みらいシティ","でんしワールド","ナゾのうちゅうせん","スターハイウェイ","わくせいきち","ワッカせいうん"]},
+    {group:"プププランド組",stages:["ウィスピーのもり","ノッポッポタワー","モクモクのきゅうでん","デデデじょう","アメージングアイランド","せんかんハルバード"]}
+  ]},
+  {title:"あつめて！カービィ",sections:[{group:"ポポポアイランズ組",stages:["グリングランド","サラサンドーラ","デデデリゾート","マグマウンテン","ネクロネビュラ"]}]},
+  {title:"星のカービィWii",sections:[
+    {group:null,stages:["クッキー カントリー","レーズン ルインズ","オニオン オーシャン","ホワイト ウェハース","ナッツ ヌーン"]},
+    {group:"ハルカンドラ組",stages:["エッガー エンジンズ","デンジャラス ディナー","ザ ラストバトル イン アナザーディメンション"]}
+  ]},
+  {title:"20周年コレクション",sections:[{group:null,stages:["ハピネス ホール","アプリコット アパート","ラスト ランド"]}]},
+  {title:"TDX（トリプルデラックス）",sections:[{group:"フロラルド組",stages:["ファイン フィールド","ロリポップ ランド","オールド オデッセイ","ワイルド ワールド","エバー エクスプロージョン","ロイヤル ロード","エターナル ドリームランド"]}]},
+  {title:"タチカビ スーパーレインボー",sections:[{group:"セブントピア組",stages:["グリーン バレー","イエロー デューンズ","インディゴ オーシャン","ブルー スカイパレス","オレンジ ウッドランド","レッド ボルケーノ","パープル フォートレス"]}]},
+  {title:"ロボボプラネット",sections:[{group:null,stages:["プレイン プロプトン","ラスタード ロード","オクターン オーシャン","ギガント グラウンド","リポジトリム リズム","アクシス アークス","マインド コントロールド バイ ア プログラム"]}]},
+  {title:"スターアライズ",sections:[
+    {group:"プププランド組",stages:["グリーングリーティング","ドーナツドーム","ハニーヒル","フルーティフォレスト","クライマックス オブ キャッスルデデデ","エクストラエクレア"]},
+    {group:"ポップスター組",stages:["フレンズフィールド","リーフリゾート","エコーズエッジ","ネイキッドナチュレ","セイントスクエアーズ","インサイドアイランズ","ダブルスドリームス"]},
+    {group:"暗黒要塞ジャマハルダ",stages:["暗黒要塞ジャマハルダ"]},
+    {group:"きらめき組",stages:["惑星フォルアース","小惑星フォルナ","惑星ミスティーン","小惑星マリーン","惑星ポッカラ","小惑星クード","惑星ヒャッコル","小惑星フュー","惑星ピサーシャ","小惑星ガベル","新星ドルムアーツ","小惑星メラーガ","大魔星マジュハルガロア","神降衛星エンデ","エクストラスターα","エクストラスターβ","エクストラスターγ","エクストラスターδ","のうりょく星"]},
+    {group:"スタアラ組",stages:["ディメンションI","ディメンションII","ディメンションIII","ディメンションIV","ファイナルディメンション"]}
+  ]},
+  {title:"ディスカバリー",sections:[
+    {group:"はじまり組",stages:["はじまりの地","ネイチェル草原","エバーブルグ海岸","ワンダリア跡地","ホワイティホルンズ"]},
+    {group:"禁足組",stages:["オリジネシア荒野大地","レッドガル禁足地","ラボ・ディスカバール"]},
+    {group:null,stages:["絶島ドリーミー・フォルガ"]}
+  ]},
+];
+
+// ===== ストレージ =====
+const KEYS = { sonic:'sonic_stages_data', mario:'mario_stages_data', kirby:'kirby_stages_data' };
+const stores = { sonic: loadStore('sonic'), mario: loadStore('mario'), kirby: loadStore('kirby') };
+function loadStore(s){ try{ const r=localStorage.getItem(KEYS[s]); return r?JSON.parse(r):{}; }catch(e){return {};} }
+function saveStore(s){ try{ localStorage.setItem(KEYS[s], JSON.stringify(stores[s])); }catch(e){} }
+function stageKey(w,g,st){ return w+':::'+(g||'')+':::'+st; }
+function getSD(s,w,g,st){ return stores[s][stageKey(w,g,st)]||{status:'none',gender:'unset',age:'',look:'',lookDetail:'',personality:'',trait:'',quote:'',botsu:'',cv:'',memo:''}; }
+
+const STATUS_LABELS = {none:'未着手',idea:'IDEA',wip:'WIP',done:'DONE',ex:'除外',same:'同一人物'};
+const SERIES_COLOR = {sonic:'var(--sonic-col)',mario:'var(--mario-col)',kirby:'var(--kirby-col)'};
+let currentSeries=null, currentKey2=null;
+const OPEN_GROUPS_KEY='personification_open_groups';
+let openGroups={};
+try{openGroups=JSON.parse(localStorage.getItem(OPEN_GROUPS_KEY)||'{}');}catch(e){openGroups={};}
+function saveOpenGroups(){localStorage.setItem(OPEN_GROUPS_KEY,JSON.stringify(openGroups));}
+
+// ===== 統計更新 =====
+function updateStats(series, works){
+  let total=0,done=0,wip=0,idea=0,ex=0;
+  const p=series[0];
+  works.forEach(w=>w.sections.forEach(sec=>sec.stages.forEach(st=>{
+    total++; const d=getSD(series,w.title,sec.group,st);
+    if(d.status==='done')done++;
+    else if(d.status==='wip')wip++;
+    else if(d.status==='idea')idea++;
+    else if(d.status==='ex')ex++;
+  })));
+  document.getElementById(p+'-total').textContent=total;
+  document.getElementById(p+'-done').textContent=done;
+  document.getElementById(p+'-wip').textContent=wip;
+  document.getElementById(p+'-idea').textContent=idea;
+  document.getElementById(p+'-ex').textContent=ex;
+}
+
+// ===== カード生成 =====
+function makeCard(series, workTitle, group, stageName, isCustom){
+  const d=getSD(series,workTitle,group,stageName);
+  const card=document.createElement('div');
+  card.className=`stage-card status-${d.status}`;
+  const GENDER_ICON={female:'♀',male:'♂',none2:'⚬',unset:''};
+  const GENDER_COLOR={female:'#E85FA0',male:'#4A9EDB',none2:'#9C7EC8',unset:'transparent'};
+  const gIcon=GENDER_ICON[d.gender||'unset']||'';
+  const gColor=GENDER_COLOR[d.gender||'unset']||'transparent';
+  const ageTxt=d.age?`<span style="font-size:10px;color:var(--gray);font-family:var(--font-ui);">${d.age}</span>`:'';
+  card.innerHTML=`
+    <div class="stage-name">${stageName}${gIcon?`<span class="card-gender" style="color:${gColor}">${gIcon}</span>`:''}</div>
+    <div class="card-info-row">
+      <span class="stage-status-badge badge-${d.status}">${STATUS_LABELS[d.status]}</span>
+      ${ageTxt}
+    </div>
+    ${isCustom?`<button class="card-delete-btn" title="このステージを削除">✕</button>`:''}`;
+  card.querySelector('.stage-name').addEventListener('click',()=>openModal(series,workTitle,group,stageName));
+  card.querySelector('.card-info-row').addEventListener('click',()=>openModal(series,workTitle,group,stageName));
+  if(isCustom){
+    card.querySelector('.card-delete-btn').addEventListener('click', e=>{
+      e.stopPropagation();
+      if(!confirm(`ステージ「${stageName}」を削除しますか？\n※擬人化データも一緒に削除されます。`)) return;
+      let customWorks=[];
+      try{ customWorks=JSON.parse(localStorage.getItem(series+'_custom_works')||'[]'); }catch(err){}
+      const wi=customWorks.findIndex(w=>w.title===workTitle);
+      if(wi!==-1){
+        const si=customWorks[wi].sections.findIndex(s=>s.group===group);
+        if(si!==-1){
+          customWorks[wi].sections[si].stages=customWorks[wi].sections[si].stages.filter(s=>s!==stageName);
+          if(customWorks[wi].sections[si].stages.length===0) customWorks[wi].sections.splice(si,1);
+          if(customWorks[wi].sections.length===0) customWorks.splice(wi,1);
+          localStorage.setItem(series+'_custom_works',JSON.stringify(customWorks));
+          const key=stageKey(workTitle,group,stageName);
+          delete stores[series][key]; saveStore(series);
+        }
+      }
+      if(series==='sonic') renderSeries('sonic',SONIC_WORKS,'sonic-notebooks');
+      else if(series==='mario') renderSeries('mario',MARIO_WORKS,'mario-notebooks');
+      else renderSeries('kirby',KIRBY_WORKS,'kirby-notebooks');
+    });
+  } else {
+    card.addEventListener('click',()=>openModal(series,workTitle,group,stageName));
+  }
+  return card;
+}
+
+// ===== レンダリング =====
+function renderSeries(series, baseWorks, containerId){
+  const container=document.getElementById(containerId);
+  container.innerHTML='';
+  const seriesClass=series;
+
+  // カスタム作品の読み込みと結合
+  let customWorks = [];
+  try { customWorks = JSON.parse(localStorage.getItem(series+'_custom_works')||'[]'); }catch(e){}
+  const allWorks = baseWorks.concat(customWorks);
+  const baseCount = baseWorks.length;
+
+  // ジャンプメニューの作成
+  const jm = document.createElement('select');
+  jm.className = `jump-menu series-${series}`;
+  jm.innerHTML = '<option value="">▼ スマホ用：作品へ瞬時にジャンプ...</option>';
+  allWorks.forEach((w, i) => {
+    const opt = document.createElement('option');
+    opt.value = `nb-${series}-${i}`;
+    opt.textContent = w.title;
+    jm.appendChild(opt);
+  });
+  jm.addEventListener('change', e => {
+    if(e.target.value){
+      document.getElementById(e.target.value).scrollIntoView({behavior: 'smooth'});
+      e.target.value = ''; // 元に戻す
+    }
+  });
+  container.appendChild(jm);
+
+  // ノートの描画
+  allWorks.forEach((work, i)=>{
+    const isCustomWork = i >= baseCount;
+    const nb=document.createElement('div');
+    nb.className=`notebook ${seriesClass}`;
+    nb.id = `nb-${series}-${i}`; // ジャンプ用ID
+    nb.innerHTML=`<div class="holes">${'<div class="hole"></div>'.repeat(8)}</div><div class="nb-content"><div class="work-title">${work.title}</div></div>`;
+    container.appendChild(nb);
+    const nbContent=nb.querySelector('.nb-content');
+    work.sections.forEach(section=>{
+      if(section.group){
+        const gb=document.createElement('div'); gb.className='group-block';
+        const gh=document.createElement('div'); gh.className='group-header';
+        gh.innerHTML=`<span class="group-arrow">▶</span><span class="group-name">${section.group}</span><span class="group-count">${section.stages.length}ステージ</span>`;
+        const gbody=document.createElement('div'); gbody.className='group-body';
+        const grid=document.createElement('div'); grid.className='stage-grid';
+        section.stages.forEach(s=>grid.appendChild(makeCard(series,work.title,section.group,s,isCustomWork)));
+        gbody.appendChild(grid);
+        
+        const groupKey=series+'::'+work.title+'::'+section.group;
+        if(openGroups[groupKey]){
+          gbody.classList.add('open');
+          gh.querySelector('.group-arrow').classList.add('open');
+        }
+        gh.addEventListener('click',()=>{
+          const o=gbody.classList.toggle('open');
+          gh.querySelector('.group-arrow').classList.toggle('open',o);
+          openGroups[groupKey]=o;
+          saveOpenGroups();
+        });
+
+        gb.appendChild(gh); gb.appendChild(gbody); nbContent.appendChild(gb);
+      } else {
+        const grid=document.createElement('div'); grid.className='stage-grid'; grid.style.marginBottom='1rem';
+        section.stages.forEach(s=>grid.appendChild(makeCard(series,work.title,null,s,isCustomWork)));
+        nbContent.appendChild(grid);
+      }
+    });
+  });
+
+  // カスタム追加BOXの描画
+  const addBox = document.createElement('div');
+  addBox.className = `custom-add-box ${seriesClass}`;
+  addBox.innerHTML = `
+    <div class="custom-add-title">＋ オリジナル作品・グループ・ステージを追加する</div>
+    <div class="custom-inputs-row">
+      <input type="text" id="add-work-${series}" class="custom-add-input" placeholder="作品名 (例: マリカ8DX)">
+      <input type="text" id="add-group-${series}" class="custom-add-input" placeholder="グループ名・組 (空欄OK / 例: キノコカップ組)">
+      <input type="text" id="add-stage-${series}" class="custom-add-input" placeholder="ステージ名 (例: マリオカートスタジアム)">
+    </div>
+    <div class="custom-btn-row">
+      <button class="custom-add-btn" onclick="addCustomStage('${series}')">追加</button>
+    </div>
+  `;
+  container.appendChild(addBox);
+
+  updateStats(series, allWorks);
+}
+
+// ===== カスタムステージの追加と削除 =====
+window.addCustomStage = function(series) {
+  const wName = document.getElementById(`add-work-${series}`).value.trim();
+  const gName = document.getElementById(`add-group-${series}`).value.trim() || null; 
+  const sName = document.getElementById(`add-stage-${series}`).value.trim();
+  
+  if(!wName || !sName) { 
+    alert('作品名とステージ名は必ず入力してください！'); 
+    return; 
+  }
+
+  let customWorks = [];
+  try { customWorks = JSON.parse(localStorage.getItem(series+'_custom_works')||'[]'); }catch(e){}
+
+  let targetWork = customWorks.find(w => w.title === wName);
+  if(!targetWork){
+    targetWork = { title: wName, sections: [] };
+    customWorks.push(targetWork);
+  }
+  
+  let targetSection = targetWork.sections.find(sec => sec.group === gName);
+  if(!targetSection){
+    targetSection = { group: gName, stages: [] };
+    targetWork.sections.push(targetSection);
+  }
+  
+  if(!targetSection.stages.includes(sName)){
+    targetSection.stages.push(sName);
+  } else {
+    alert('そのグループに同じステージがすでに登録されています！');
+    return;
+  }
+  
+  localStorage.setItem(series+'_custom_works', JSON.stringify(customWorks));
+  document.getElementById(`add-stage-${series}`).value = '';
+  
+  if(series==='sonic') renderSeries('sonic',SONIC_WORKS,'sonic-notebooks');
+  else if(series==='mario') renderSeries('mario',MARIO_WORKS,'mario-notebooks');
+  else renderSeries('kirby',KIRBY_WORKS,'kirby-notebooks');
+};
+
+window.deleteCustomStage = function(series) {
+  const wName = document.getElementById(`add-work-${series}`).value.trim();
+  const gName = document.getElementById(`add-group-${series}`).value.trim() || null;
+  const sName = document.getElementById(`add-stage-${series}`).value.trim();
+  
+  if(!wName || !sName) { 
+    alert('削除したい作品名とステージ名を入力してください！'); 
+    return; 
+  }
+  if(!confirm(`作品「${wName}」から ステージ「${sName}」を削除しますか？\n※入力していた擬人化データも一緒に削除されます。`)) return;
+
+  let customWorks = [];
+  try { customWorks = JSON.parse(localStorage.getItem(series+'_custom_works')||'[]'); }catch(e){}
+
+  let targetWorkIndex = customWorks.findIndex(w => w.title === wName);
+  if(targetWorkIndex !== -1){
+    let targetWork = customWorks[targetWorkIndex];
+    let targetSectionIndex = targetWork.sections.findIndex(sec => sec.group === gName);
+    
+    if(targetSectionIndex !== -1) {
+        let targetSection = targetWork.sections[targetSectionIndex];
+        
+        if(targetSection.stages.includes(sName)){
+            targetSection.stages = targetSection.stages.filter(s => s !== sName);
+            if(targetSection.stages.length === 0) targetWork.sections.splice(targetSectionIndex, 1);
+            if(targetWork.sections.length === 0) customWorks.splice(targetWorkIndex, 1);
+            
+            localStorage.setItem(series+'_custom_works', JSON.stringify(customWorks));
+            
+            const key = wName + ':::' + (gName || '') + ':::' + sName; 
+            delete stores[series][key];
+            saveStore(series);
+            
+            if(series==='sonic') renderSeries('sonic',SONIC_WORKS,'sonic-notebooks');
+            else if(series==='mario') renderSeries('mario',MARIO_WORKS,'mario-notebooks');
+            else renderSeries('kirby',KIRBY_WORKS,'kirby-notebooks');
+            
+            alert('削除しました！');
+        } else {
+            alert('そのステージは見つかりませんでした。');
+        }
+    } else {
+        alert('指定されたグループ（組）が見つかりませんでした。');
+    }
+  } else {
+    alert('該当するカスタム作品が見つかりませんでした。');
+  }
+};
+
+// ===== 使い方を見るボタン =====
+document.getElementById('btn-help').addEventListener('click', () => {
+  alert(
+    "【擬人化管理ノート 使い方ガイド】\n\n" +
+    "📌 1. データの保存について\n" +
+    "入力したデータはブラウザの「localStorage」に自動保存されます。\n" +
+    "⚠️ブラウザの履歴やキャッシュを消去するとデータが全部消えてしまうので、定期的に「データを書き出す」ボタンでバックアップを取ってください！\n\n" +
+    "📌 2. イラスト（画像）の登録方法\n" +
+    "ノートが重くならないよう画像は「URL指定方式」です。\n" +
+    "【使えるURL】Discordに画像をアップして右クリック→「リンクをコピー」した https://cdn.discordapp.com/... など、https://〜で始まるURLが使えます。\n" +
+    "【使えないURL】blob:https://〜で始まるURLや、画像変換サイトで生成したURLは表示されません。\n" +
+    "Discordへのアップロードが一番手軽でおすすめです！\n\n" +
+    "📌 3. オリジナル作品の追加\n" +
+    "マリカなど他のゲームを追加したい時は、各タブの一番下にある追加ボックスを使います。「〇〇組」を指定して分けることも可能です。\n\n" +
+    "📌 4. スマホでの操作\n" +
+    "各タブの一番上にある「作品セレクト」を使うと、目的の作品まで一瞬でジャンプできます！"
+  );
+});
+
+// ===== イラスト（URL指定方式） =====
+const illustUrlInput = document.getElementById('illust-url-input');
+const illustPlaceholder = document.getElementById('illust-placeholder');
+const illustPreview = document.getElementById('illust-preview');
+const illustBtnRow = document.getElementById('illust-btn-row');
+let currentIllust = null;
+
+function showIllust(src){
+  if(src){
+    illustPlaceholder.style.display='none';
+    illustPreview.src=src;
+    illustPreview.style.display='block';
+    illustBtnRow.style.display='flex';
+    illustUrlInput.value = src;
+  } else {
+    illustPlaceholder.style.display='flex';
+    illustPreview.style.display='none';
+    illustPreview.src='';
+    illustBtnRow.style.display='none';
+    illustUrlInput.value = '';
+  }
+  currentIllust=src||null;
+}
+function loadIllust(){
+  const key='illust:::'+currentKey2;
+  try{ return localStorage.getItem(key)||null; }catch(e){ return null; }
+}
+function saveIllust(src){
+  const key='illust:::'+currentKey2;
+  try{
+    if(src) localStorage.setItem(key,src);
+    else localStorage.removeItem(key);
+  }catch(e){ alert('保存できませんでした。'); }
+}
+document.getElementById('illust-url-apply').addEventListener('click', () => {
+  const url = illustUrlInput.value.trim();
+  if(url) showIllust(url);
+});
+document.getElementById('illust-delete').addEventListener('click', () => {
+  showIllust(null);
+});
+
+// ===== エクスポート・インポート =====
+document.getElementById('btn-export').addEventListener('click',()=>{
+  const illustData={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith('illust:::')) illustData[k]=localStorage.getItem(k);
+  }
+  const customWorksData = {};
+  ['sonic','mario','kirby'].forEach(s => { customWorksData[s] = localStorage.getItem(s+'_custom_works'); });
+
+  const exportObj={ stores, illustData, openGroups, customWorksData, exportedAt: new Date().toISOString() };
+  const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='擬人化データ_'+new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')+'.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById('btn-import').addEventListener('click',()=>document.getElementById('import-file').click());
+document.getElementById('import-file').addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file) return;
+  if(!confirm('現在のデータに上書きインポートします。よろしいですか？')) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const obj=JSON.parse(ev.target.result);
+      if(obj.stores){
+        Object.assign(stores.sonic, obj.stores.sonic||{});
+        Object.assign(stores.mario, obj.stores.mario||{});
+        Object.assign(stores.kirby, obj.stores.kirby||{});
+        saveStore('sonic'); saveStore('mario'); saveStore('kirby');
+      }
+      if(obj.illustData){
+        Object.entries(obj.illustData).forEach(([k,v])=>{ try{ localStorage.setItem(k,v); }catch(err){} });
+      }
+      if(obj.openGroups) Object.assign(openGroups, obj.openGroups);
+      if(obj.customWorksData){
+        Object.entries(obj.customWorksData).forEach(([k,v])=>{ if(v) localStorage.setItem(k+'_custom_works', v); });
+      }
+      renderSeries('sonic',SONIC_WORKS,'sonic-notebooks');
+      renderSeries('mario',MARIO_WORKS,'mario-notebooks');
+      renderSeries('kirby',KIRBY_WORKS,'kirby-notebooks');
+      alert('インポートが完了しました！');
+    }catch(err){ alert('ファイルの読み込みに失敗しました。正しいJSONファイルか確認してください。'); }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+});
+
+// ===== モーダル =====
+function openModal(series, workTitle, group, stageName){
+  currentSeries=series; currentKey2=stageKey(workTitle,group,stageName);
+  const d=getSD(series,workTitle,group,stageName);
+  document.getElementById('modal-stage-name').textContent=stageName;
+  document.getElementById('modal-work-name').textContent=workTitle+(group?' › '+group:'');
+  document.getElementById('modal-age').value=d.age||'';
+  document.getElementById('modal-look').value=d.look||'';
+  document.getElementById('modal-look-detail').value=d.lookDetail||'';
+  document.getElementById('modal-personality').value=d.personality||'';
+  document.getElementById('modal-trait').value=d.trait||'';
+  document.getElementById('modal-quote').value=d.quote||'';
+  document.getElementById('modal-botsu').value=d.botsu||'';
+  document.getElementById('modal-cv').value=d.cv||'';
+  document.getElementById('modal-memo').value=d.memo||'';
+  
+  document.querySelectorAll('.gender-btn').forEach(btn=>{ btn.className='gender-btn'; if(btn.dataset.g===(d.gender||'unset')) btn.classList.add('active-'+(d.gender||'unset')); });
+  const mi=document.getElementById('modal-inner');
+  mi.className=`modal series-${series}`;
+  document.querySelectorAll('.status-btn').forEach(btn=>{ btn.className='status-btn'; if(btn.dataset.s===d.status) btn.classList.add('active-'+d.status); });
+  document.getElementById('modal-overlay').classList.add('open');
+  showIllust(loadIllust());
+}
+
+document.querySelectorAll('.gender-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{ document.querySelectorAll('.gender-btn').forEach(b=>b.className='gender-btn'); btn.classList.add('active-'+btn.dataset.g); });
+});
+document.querySelectorAll('.status-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{ document.querySelectorAll('.status-btn').forEach(b=>b.className='status-btn'); btn.classList.add('active-'+btn.dataset.s); });
+});
+document.getElementById('modal-save').addEventListener('click',()=>{
+  const ab=document.querySelector('.status-btn[class*="active-"]');
+  const gb=document.querySelector('.gender-btn[class*="active-"]');
+  const status=ab?ab.dataset.s:'none';
+  const gender=gb?gb.dataset.g:'unset';
+  stores[currentSeries][currentKey2]={
+    status, gender,
+    age: document.getElementById('modal-age').value,
+    look: document.getElementById('modal-look').value,
+    lookDetail: document.getElementById('modal-look-detail').value,
+    personality: document.getElementById('modal-personality').value,
+    trait: document.getElementById('modal-trait').value,
+    quote: document.getElementById('modal-quote').value,
+    botsu: document.getElementById('modal-botsu').value,
+    cv: document.getElementById('modal-cv').value,
+    memo: document.getElementById('modal-memo').value,
+  };
+  saveStore(currentSeries);
+  saveIllust(currentIllust);
+  if(currentSeries==='sonic') renderSeries('sonic',SONIC_WORKS,'sonic-notebooks');
+  else if(currentSeries==='mario') renderSeries('mario',MARIO_WORKS,'mario-notebooks');
+  else renderSeries('kirby',KIRBY_WORKS,'kirby-notebooks');
+  document.getElementById('modal-overlay').classList.remove('open');
+});
+document.getElementById('modal-close').addEventListener('click',()=>document.getElementById('modal-overlay').classList.remove('open'));
+document.getElementById('modal-overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open'); });
+
+// ===== トップへ戻る =====
+const backToTop = document.getElementById('back-to-top');
+window.addEventListener('scroll', ()=>{
+  backToTop.classList.toggle('visible', window.scrollY > 300);
+});
+backToTop.addEventListener('click', ()=>{
+  window.scrollTo({ top:0, behavior:'smooth' });
+});
+
+// ===== タブ =====
+function initTabs(){
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+      btn.classList.add('active');
+      const target = document.getElementById('tab-'+btn.dataset.tab);
+      if(target) target.classList.add('active');
+    });
+  });
+}
+
+// ===== 初期化 =====
+renderSeries('sonic',SONIC_WORKS,'sonic-notebooks');
+renderSeries('mario',MARIO_WORKS,'mario-notebooks');
+renderSeries('kirby',KIRBY_WORKS,'kirby-notebooks');
+initTabs();
+</script>
+</body>
+</html>
